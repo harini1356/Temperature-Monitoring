@@ -1,0 +1,87 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include "DHT.h"
+
+#define DHTPIN D4         // DHT11 data pin connected to D2 (GPIO4)
+#define DHTTYPE DHT11      // Using DHT11 sensor
+#define LEDPIN D2          // LED connected to D4 (GPIO2)
+#define TEMP_THRESHOLD 30.0
+
+const char* ssid = "your wifi id";      // Replace with your WiFi SSID
+const char* password = "your wifi password";             // Replace with your WiFi password
+
+const String apiKey = "api key";  // Your ThingSpeak API key
+const String server = "your thingspeak server name";
+
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  pinMode(LEDPIN, OUTPUT);
+  digitalWrite(LEDPIN, LOW);
+
+  Serial.print("Connecting to Wi-Fi");
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected to Wi-Fi!");
+}
+
+void loop() {
+  delay(2000);  // Allow time for sensor reading
+
+  float temp = dht.readTemperature();  // Celsius
+  float hum = dht.readHumidity();      // Percentage
+  int ledState = 0;
+
+  if (isnan(temp) || isnan(hum)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  Serial.print("Temperature: ");
+  Serial.print(temp);
+  Serial.print(" °C | Humidity: ");
+  Serial.print(hum);
+  Serial.println(" %");
+
+  if (temp > TEMP_THRESHOLD) {
+    digitalWrite(LEDPIN, HIGH);
+    ledState = 1;
+    Serial.println("LED ON (Temp exceeded threshold)");
+  } else {
+    digitalWrite(LEDPIN, LOW);
+    ledState = 0;
+    Serial.println("LED OFF (Temp below threshold)");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+
+    String url = server + "/update?api_key=" + apiKey +
+      "&field1=" + String(temp) +
+      "&field2=" + String(hum) +
+      "&field3=" + String(ledState);
+
+    http.begin(client, url);  // ✅ Corrected API
+    int httpCode = http.GET();
+
+    if (httpCode == 200) {
+      Serial.println("Data sent to ThingSpeak.");
+    } else {
+      Serial.print("Failed to send data. HTTP code: ");
+      Serial.println(httpCode);
+    }
+
+    http.end();
+  }
+
+  delay(10000);  // Wait 10 seconds before sending next update
+}
