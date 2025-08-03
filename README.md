@@ -57,7 +57,8 @@ Field3 shows LED status (1 = ON, 0 = OFF)
 
 Data updates every 10 seconds, allowing for real-time monitoring from anywhere.
 
-![1](https://github.com/user-attachments/assets/6a782a34-adae-4201-a43e-55283e8f73ca)
+![1](https://github.com/user-attachments/assets/2f0b2a2e-87fb-43ac-b0bf-d4b3fb55bfe0)
+
 
 
 
